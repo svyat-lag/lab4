@@ -56,16 +56,32 @@ public class FractalExplorer {
         JFrame frame = new JFrame("Fractal Explorer");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+
+        // Create comboBox with fractal's names
+        JComboBox<FractalGenerator> fractalSelector = new JComboBox<>();
+
+        // Filling the comboBox
+        fractalSelector.addItem(new Mandelbrot());
+        fractalSelector.addItem(new Tricorn());
+        fractalSelector.addItem(new BurningShip());
+
+        // Create panel with label and comboBox
+        JPanel header = new JPanel();
+        frame.add(header, BorderLayout.NORTH);
+        header.add(new JLabel("Select fractal: "));
+        header.add(fractalSelector);
+
+        // Create resetDisplay button
         JButton resetDisplay = new JButton("Reset display");
+
+        // EventListeners for button, comboBox and mouse
+        resetDisplay.addActionListener(new ButtonHadler());
+        fractalSelector.addActionListener(new ButtonHadler());
+        display.addMouseListener(new MouseHandler());
+
 
         frame.add(resetDisplay, BorderLayout.SOUTH);
         frame.add(display, BorderLayout.CENTER);
-
-        ButtonHadler resetHadler = new ButtonHadler();
-        resetDisplay.addActionListener(resetHadler);
-
-        MouseHandler click = new MouseHandler();
-        display.addMouseListener(click);
 
         frame.pack();
         frame.setVisible(true);
@@ -136,6 +152,13 @@ public class FractalExplorer {
         @Override
         public void actionPerformed(ActionEvent e) {
             String command = e.getActionCommand();
+
+            if (e.getSource() instanceof JComboBox) {
+                JComboBox mySource = (JComboBox) e.getSource();
+                fractal = (FractalGenerator) mySource.getSelectedItem();
+                fractal.getInitialRange(range);
+                drawFractal();
+            }
 
             if (command.equals("Reset display")) {
                 fractal.getInitialRange(range);
