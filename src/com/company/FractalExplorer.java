@@ -1,12 +1,16 @@
 package com.company;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.*;
 
 public class FractalExplorer {
 
@@ -52,9 +56,10 @@ public class FractalExplorer {
     public void createAndShowGUI (){
 
         /** Set the frame to use a java.awt.BorderLayout for its contents. **/
-        display.setLayout(new BorderLayout());
+        //display.setLayout(new BorderLayout());
         JFrame frame = new JFrame("Fractal Explorer");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout());
 
 
         // Create comboBox with fractal's names
@@ -74,13 +79,21 @@ public class FractalExplorer {
         // Create resetDisplay button
         JButton resetDisplay = new JButton("Reset display");
 
-        // EventListeners for button, comboBox and mouse
+        // Create save button
+        JButton saveButton = new JButton("Save image");
+
+        // Create panel with save button and reset display button
+        JPanel footer = new JPanel();
+        frame.add(footer, BorderLayout.SOUTH);
+        footer.add(resetDisplay);
+        footer.add(saveButton);
+
+        // EventListeners for buttons, comboBox and mouse
         resetDisplay.addActionListener(new ButtonHadler());
         fractalSelector.addActionListener(new ButtonHadler());
+        saveButton.addActionListener(new ButtonHadler());
         display.addMouseListener(new MouseHandler());
 
-
-        frame.add(resetDisplay, BorderLayout.SOUTH);
         frame.add(display, BorderLayout.CENTER);
 
         frame.pack();
@@ -154,8 +167,8 @@ public class FractalExplorer {
             String command = e.getActionCommand();
 
             if (e.getSource() instanceof JComboBox) {
-                JComboBox mySource = (JComboBox) e.getSource();
-                fractal = (FractalGenerator) mySource.getSelectedItem();
+                JComboBox source = (JComboBox) e.getSource();
+                fractal = (FractalGenerator) source.getSelectedItem();
                 fractal.getInitialRange(range);
                 drawFractal();
             }
@@ -163,6 +176,51 @@ public class FractalExplorer {
             if (command.equals("Reset display")) {
                 fractal.getInitialRange(range);
                 drawFractal();
+            }
+
+            if (command.equals("Save image")) {
+                /** Allow the user to choose a file to save the image to. **/
+                JFileChooser fileChooser = new JFileChooser();
+
+                /** Save only PNG images. **/
+                FileFilter extensionFilter =
+                        new FileNameExtensionFilter("PNG Images", "png");
+                fileChooser.setFileFilter(extensionFilter);
+                /**
+                 * Ensures that the filechooser won't allow non-".png"
+                 * filenames.
+                 */
+                fileChooser.setAcceptAllFileFilterUsed(false);
+
+                int userSelection = fileChooser.showSaveDialog(display);
+
+                /**
+                 * If the outcome of the file-selection operation is
+                 * APPROVE_OPTION, continue with the file-save operation.
+                 */
+                if (userSelection == JFileChooser.APPROVE_OPTION) {
+
+                    /** Get the file and file name. **/
+                    File file = fileChooser.getSelectedFile();
+
+                    /** Try saving the fractal image to disk. **/
+                    try {
+                        javax.imageio.ImageIO.write(display.getImage(), "png", file);
+                    }
+                    /**
+                     * Catches all exceptions and prints a message with the
+                     * exception.
+                     */
+                    catch (Exception exception) {
+                        JOptionPane.showMessageDialog(display,
+                                exception.getMessage(), "Cannot Save Image",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+                /**
+                 * If the file-save operation is not APPROVE_OPTION, return.
+                 */
+                else return;
             }
         }
     }

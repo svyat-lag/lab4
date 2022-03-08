@@ -24,8 +24,8 @@ public class BurningShip extends FractalGenerator{
          *      z' = z*z + c
          *      = (z_r + z_i)(z_r + z_i) + (c_r + c_i)
          *      = z_r² + 2*z_r*z_i - z_i² + c_r + c_i
-         *      z_r' = z_r² - z_i² + c_r
-         *      z_i' = 2*z_i*z_r + c_i
+         *      z_r' = |z_r² - z_i² + c_r|
+         *      z_i' = |2*z_i*z_r + c_i|
          */
 
         double z_r = 0.0;

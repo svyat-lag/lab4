@@ -6,6 +6,10 @@ import java.awt.image.BufferedImage;
 public class JImageDisplay extends javax.swing.JComponent {
     private BufferedImage bufferedImage;
 
+    public BufferedImage getImage() {
+        return bufferedImage;
+    }
+
     public JImageDisplay(int width, int height){
         bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         this.setPreferredSize(new Dimension(width, height));
