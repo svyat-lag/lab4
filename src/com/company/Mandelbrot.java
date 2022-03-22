@@ -33,9 +33,6 @@ public class Mandelbrot extends FractalGenerator {
 
         int iterCount = 0;
 
-        // Modulus (distance) formula:
-        // √(a² + b²) <= 2.0
-        // a² + b² <= 4.0
         while ( z_r*z_r + z_i*z_i <= 4.0 ) {
 
             double z_r_tmp = z_r;
@@ -43,7 +40,6 @@ public class Mandelbrot extends FractalGenerator {
             z_r = z_r * z_r - z_i * z_i + c_r;
             z_i = 2 * z_i * z_r_tmp + c_i;
 
-            // Point was inside the Mandelbrot set
             if (iterCount >= MAX_ITERATIONS)
                 return MAX_ITERATIONS;
 

@@ -17,6 +17,18 @@ public class FractalExplorer {
     /** Integer display size is the width and height of display in pixels. **/
     private int displaySize;
 
+    /** Number of rows remaining to be drawn. **/
+    private int rowsRemaining;
+
+    /** Drop-down list which contains fractal names. **/
+    JComboBox<FractalGenerator> fractalSelector;
+
+    /** Button to reset fractal image on display. **/
+    JButton resetDisplay;
+
+    /** Button to save current image. **/
+    JButton saveButton;
+
     /**
      * JImageDisplay reference to update display from various methods as
      * the fractal is computed.
@@ -63,7 +75,7 @@ public class FractalExplorer {
 
 
         // Create comboBox with fractal's names
-        JComboBox<FractalGenerator> fractalSelector = new JComboBox<>();
+        fractalSelector = new JComboBox<>();
 
         // Filling the comboBox
         fractalSelector.addItem(new Mandelbrot());
@@ -77,10 +89,10 @@ public class FractalExplorer {
         header.add(fractalSelector);
 
         // Create resetDisplay button
-        JButton resetDisplay = new JButton("Reset display");
+        resetDisplay = new JButton("Reset display");
 
         // Create save button
-        JButton saveButton = new JButton("Save image");
+        saveButton = new JButton("Save image");
 
         // Create panel with save button and reset display button
         JPanel footer = new JPanel();
@@ -111,51 +123,33 @@ public class FractalExplorer {
      * Update the display with the color for each pixel and repaint
      * JImageDisplay when all pixels have been drawn.
      */
-    private void drawFractal (){
+    private void drawFractal () {
 
-        /** Loop through every pixel in the display **/
-        for (int x = 0; x < display.getWidth(); x++) {
-            for (int y = 0; y < display.getHeight(); y++) {
+        // Call enableUI(false) to disable all the UI controls during drawing.
+        enableUI(false);
 
-                /**
-                 * Find the corresponding coordinates xCoord and yCoord
-                 * in the fractal's display area.
-                 */
-                double xCoord = FractalGenerator.getCoord(range.x,range.x + range.width,
-                        displaySize, x);
-                double yCoord = FractalGenerator.getCoord(range.x, range.x + range.width,
-                        displaySize, y);
+        // Set rowsRemaining to the total number of rows.
+        rowsRemaining = displaySize;
 
-                /**
-                 * Compute the number of iterations for the coordinates in
-                 * the fractal's display area.
-                 */
-                int numIters = fractal.numIterations(xCoord, yCoord);
-
-                /** If number of iterations is -1, set the pixel to black. **/
-                if (numIters == -1) {
-                    display.drawPixel(x, y, 0);
-                } else {
-                    /**
-                     * Otherwise, choose a hue value based on the number
-                     * of iterations.
-                     */
-                    float hue = 0.8f - (float) numIters / 100f;
-                    int rgbColor = Color.HSBtoRGB(hue, 1f, 1f);
-
-                    /** Update the display with the color for each pixel. **/
-                    display.drawPixel(x, y, rgbColor);
-                }
-
-            }
+        // Loop through every row in the display and call FractalWorker
+        // to draw it.
+        for (int x = 0; x < displaySize; x++) {
+            FractalWorker drawRow = new FractalWorker(x);
+            drawRow.execute();
         }
-        /**
-         * When all the pixels have been drawn, repaint JImageDisplay to match
-         * current contents of its image.
-         */
-        display.repaint();
+
     }
 
+    /**
+     * Enables or disables the interface's buttons and combo-box based on the
+     * specified value.  Updates the enabled-state of the save button, reset
+     * button, and combo-box.
+     */
+    private void enableUI(boolean val){
+        fractalSelector.setEnabled(val);
+        resetDisplay.setEnabled(val);
+        saveButton.setEnabled(val);
+    }
 
     /**
      * An inner class to handle ActionListener events.
@@ -232,22 +226,103 @@ public class FractalExplorer {
     private class MouseHandler extends MouseAdapter{
         @Override
         public void mouseClicked(MouseEvent e) {
-            // Get x coordinate of display area of mouse click.
+
+            // Returns immediately if rowsRemaining isn't equals to 0
+            if (rowsRemaining != 0) {
+                return;
+            }
+
+            // Get x coordinate of display area of mouse click
             int x = e.getX();
             double xCoord = fractal.getCoord(range.x,
                     range.x + range.width, displaySize, x);
 
-            // Get y coordinate of display area of mouse click.
+            // Get y coordinate of display area of mouse click
             int y = e.getY();
             double yCoord = fractal.getCoord(range.y,
                     range.y + range.height, displaySize, y);
 
             // Call the generator's recenterAndZoomRange() method with
-            // coordinates that were clicked and a 0.5 scale.
+            // coordinates that were clicked and a 0.5 scale
             fractal.recenterAndZoomRange(range, xCoord, yCoord, 0.5);
 
-            // Redraw the fractal after the area being displayed has changed.
+            // Redraw the fractal after the area being displayed has changed
             drawFractal();
+        }
+    }
+
+
+    private class FractalWorker extends SwingWorker<Object, Object>{
+
+        /** The number of the current string. **/
+        int yCoordinate;
+
+        /**
+         * An array of ints to hold the computed RGB values
+         * for each pixel in the row.
+         */
+        int[] computedRGBValues;
+
+        /**
+         * The constructor takes the y-coordinate as an
+         * argument and stores it.
+         */
+        private FractalWorker(int row) {
+            yCoordinate = row;
+        }
+
+        @Override
+        protected Object doInBackground() throws Exception {
+
+            computedRGBValues = new int[displaySize];
+
+            for (int i = 0; i < computedRGBValues.length; i++){
+                /**
+                 * Find the corresponding coordinates xCoord and yCoord
+                 * in the fractal's display area.
+                 */
+                double xCoord = fractal.getCoord(range.x,
+                        range.x + range.width, displaySize, i);
+                double yCoord = fractal.getCoord(range.y,
+                        range.y + range.height, displaySize, yCoordinate);
+
+                /**
+                 * Compute the number of iterations for the coordinates in
+                 * the fractal's display area.
+                 */
+                int numIters = fractal.numIterations(xCoord, yCoord);
+
+                /** If number of iterations is -1, set the pixel to black. **/
+                if (numIters == -1) {
+                    computedRGBValues[i] = 0;
+                } else {
+                    /**
+                     * Otherwise, choose a hue value based on the number
+                     * of iterations.
+                     */
+                    float hue = 0.8f - (float) numIters / 100f;
+                    int rgbColor = Color.HSBtoRGB(hue, 1f, 1f);
+
+                    computedRGBValues[i] = rgbColor;
+                }
+            }
+            return null;
+        }
+
+        protected void done(){
+            // Iterate over the array of row-data, drawing in the pixels
+            // that were computed in doInBackground().  Redraw the row
+            // that was changed.
+            for (int i = 0; i < computedRGBValues.length; i++) {
+                display.drawPixel(i, yCoordinate, computedRGBValues[i]);
+            }
+            display.repaint(0, 0, yCoordinate, displaySize, 1);
+
+            rowsRemaining--;
+
+            if (rowsRemaining == 0) {
+                enableUI(true);
+            }
         }
     }
 
